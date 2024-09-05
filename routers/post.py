@@ -1,11 +1,12 @@
 from urllib.request import Request
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from models import Post, User
 from database import Session, ENGINE
 from schemas import CreatePostModel, PostModel
 from fastapi.exceptions import HTTPException
+from fastapi_jwt_auth import AuthJWT
 
 session = Session(bind=ENGINE)
 
@@ -17,9 +18,12 @@ async def home():
     return {"message": "Post Sahifasiga xush kelibsiz!!"}
 
 
-@router_post.post("/posts", response_model=PostModel)
-async def posts():
-    posts = session.query(Post).all()
+@router_post.get("/posts", response_model=list[PostModel])
+async def posts(Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+
+    posts = session.query(Post).filter(Post.user_id == user_id).all()
     return posts
 
 
@@ -39,11 +43,31 @@ async def create_post(post: CreatePostModel):
     return HTTPException(status_code=201, detail="Post created successfully!")
 
 
-@router_post.delete("/posts/{post_id}")
-async def delete_post(post_id: int):
-    check_post_id = session(Post).filter(Post.id == post_id).first()
-    if check_post_id is None:
-        return HTTPException(status_code=404, detail="Post not found")
-    session.delete(check_post_id)
+@router_post.post("/posts")
+async def create_post(post: CreatePostModel, Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+
+    new_post = Post(
+        user_id=user_id,
+        image_url=post.image_url,
+        caption=post.caption,
+    )
+    session.add(new_post)
     session.commit()
-    return HTTPException(status_code=204, detail="Post deleted successfully!")
+    session.refresh(new_post)
+    return new_post
+
+
+@router_post.delete("/posts/{id}")
+async def delete_post(id: int, Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+
+    post = session.query(Post).filter(Post.id == id, Post.user_id == user_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    session.delete(post)
+    session.commit()
+    return {"detail": "Post deleted successfully"}

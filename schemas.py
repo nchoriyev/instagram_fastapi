@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlalchemy import Boolean
 
 
-class UserRegisterModel(BaseModel):
+class UserRegister(BaseModel):
     id: Optional[int]
     username: str
     email: str
@@ -28,9 +28,13 @@ class UserRegisterModel(BaseModel):
         }
 
 
-class UserLoginModel(BaseModel):
+class UserLogin(BaseModel):
     username: Optional[str]
     password: Optional[str]
+
+
+class UserPasswordReset(BaseModel):
+    password: str
 
 
 class CreatePostModel(BaseModel):

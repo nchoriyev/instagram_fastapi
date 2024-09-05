@@ -1,10 +1,11 @@
 from docutils.nodes import status
-from fastapi import APIRouter
-from models import Like
+from fastapi import APIRouter, Depends
+from models import Like, Post
 from database import Session, ENGINE
 from routers.auth import session
 from schemas import LikeCreateModel, LikeModel
 from fastapi.exceptions import HTTPException
+from fastapi_jwt_auth import AuthJWT
 
 router_likes = APIRouter(prefix="/likes", tags=["likes"])
 
@@ -42,5 +43,27 @@ async def like(like: LikeCreateModel):
     session.add(new_like)
     session.commit()
     return {"message": "Like done!"}
+
+
+@router_likes.post("/like/{post_id}")
+async def like_auth(post_id: int,Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+
+    post = session.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    existing_like = session.query(Like).filter(Like.user_id == user_id, Like.post_id == post_id).first()
+
+    if existing_like:
+        session.delete(existing_like)
+        session.commit()
+        return {"detail": "Like removed"}
+
+    new_like = Like(user_id=user_id, post_id=post_id)
+    session.add(new_like)
+    session.commit()
+    return {"detail": "Post liked"}
 
 

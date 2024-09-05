@@ -1,8 +1,9 @@
-from fastapi import APIRouter
-from models import Comment
+from fastapi import APIRouter, status, Depends
+from models import Comment, Post
 from database import Session, ENGINE
 from schemas import CommentCreateModel, CommentModel
 from fastapi.exceptions import HTTPException
+from fastapi_jwt_auth import AuthJWT
 
 session = Session(bind=ENGINE)
 router_comment = APIRouter(prefix="/comments", tags=["comments"])
@@ -19,19 +20,23 @@ async def get_comments():
     return comments
 
 
-@router_comment.post("/comments")
-async def create_comment(comment: CommentCreateModel):
-    check_id = session(Comment).filter(Comment.id == comment.id).first()
-    if check_id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+@router_comment.post("/comment/{post_id}")
+async def comment(post_id: int, comment: CommentCreateModel, Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    user_id = Authorize.get_jwt_subject()
+
+    post = session.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
     new_comment = Comment(
-        post_id=comment.post_id,
-        user_id=comment.user_id,
+        user_id=user_id,
+        post_id=post_id,
         comment_text=comment.comment_text,
     )
     session.add(new_comment)
     session.commit()
-    return HTTPException(status_code=status.HTTP_201_CREATED, detail="Comment created successfully")
+    return {"detail": "Comment added"}
 
 
 @router_comment.put("/comments/{id}")
