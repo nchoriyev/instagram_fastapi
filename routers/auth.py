@@ -1,12 +1,12 @@
 import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
-from models import User
-from schemas import UserRegister, UserLogin, UserPasswordReset
+from models import User, Post
+from schemas import UserRegister, UserLogin, UserPasswordReset, PostModel
 from database import ENGINE, Session
 from werkzeug.security import generate_password_hash, check_password_hash
 from fastapi.encoders import jsonable_encoder
 from fastapi_jwt_auth import AuthJWT
-from sqlalchemy import or_
+from core import get_current_user
 
 
 session = Session(bind=ENGINE)
@@ -95,3 +95,10 @@ async def refresh_token(Authorize: AuthJWT = Depends()):
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+@auth_router.get("/", response_model=list[PostModel])
+async def get_user_posts(Authorize: AuthJWT = Depends()):
+    user_id = get_current_user(Authorize)
+
+    posts = session.query(Post).filter(Post.user_id == user_id).all()
+    return posts
