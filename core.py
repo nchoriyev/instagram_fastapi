@@ -23,10 +23,9 @@ def get_config():
 
 apps.include_router(auth_router)
 
-
-# apps.include_router(router_post)
-# apps.include_router(router_comment)
-# apps.include_router(router_likes)
+apps.include_router(router_post)
+apps.include_router(router_comment)
+apps.include_router(router_likes)
 
 
 def get_current_user(Authorize: AuthJWT = Depends()):

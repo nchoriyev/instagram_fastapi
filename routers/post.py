@@ -7,6 +7,7 @@ from database import Session, ENGINE
 from schemas import CreatePostModel, PostModel
 from fastapi.exceptions import HTTPException
 from fastapi_jwt_auth import AuthJWT
+from fastapi_pagination import Page, add_pagination, paginate
 
 session = Session(bind=ENGINE)
 
@@ -71,3 +72,12 @@ async def delete_post(id: int, Authorize: AuthJWT = Depends()):
     session.delete(post)
     session.commit()
     return {"detail": "Post deleted successfully"}
+
+
+@router_post.put("/posts", response_model=Page[dict])
+async def posts():
+    data = session.query(Post).all()
+    return paginate(data)
+
+
+add_pagination(router_post)

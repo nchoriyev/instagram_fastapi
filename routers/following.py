@@ -4,6 +4,7 @@ from models import Follow
 from database import Session, ENGINE
 from schemas import FollowerModel, FollowCreateModel
 from fastapi.exceptions import HTTPException
+from fastapi_pagination import Page, add_pagination, paginate
 
 session = Session(bind=ENGINE)
 
@@ -15,10 +16,13 @@ async def main_page_follow():
     return {"message": "Followerlar va Followinglar bosh qismiga xush kelibsiz!"}
 
 
-@router_follow.get("/follows")
+@router_follow.get("/follows", response_model=Page[dict])
 async def all_follows():
     follows = session.query(Follow).all()
-    return follows
+    return paginate(follows)
+
+
+add_pagination(router_follow)
 
 
 @router_follow.post("/to_follow")

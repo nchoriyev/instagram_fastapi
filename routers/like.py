@@ -6,6 +6,7 @@ from routers.auth import session
 from schemas import LikeCreateModel, LikeModel
 from fastapi.exceptions import HTTPException
 from fastapi_jwt_auth import AuthJWT
+from fastapi_pagination import Page, paginate, add_pagination
 
 router_likes = APIRouter(prefix="/likes", tags=["likes"])
 
@@ -15,10 +16,12 @@ async def like_home():
     return {"message": "Like qismining Bosh sahifasiga xush kelibsiz!"}
 
 
-@router_likes.get("/likes")
+@router_likes.get("/likes", response_model=Page[dict])
 async def likes():
     likes = Session.query(Like).all()
-    return likes
+    return paginate(likes)
+
+add_pagination(router_likes)
 
 
 @router_likes.post("/likes")
@@ -65,5 +68,6 @@ async def like_auth(post_id: int,Authorize: AuthJWT = Depends()):
     session.add(new_like)
     session.commit()
     return {"detail": "Post liked"}
+
 
 

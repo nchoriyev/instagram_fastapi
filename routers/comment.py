@@ -4,6 +4,7 @@ from database import Session, ENGINE
 from schemas import CommentCreateModel, CommentModel
 from fastapi.exceptions import HTTPException
 from fastapi_jwt_auth import AuthJWT
+from fastapi_pagination import Page, add_pagination, paginate
 
 session = Session(bind=ENGINE)
 router_comment = APIRouter(prefix="/comments", tags=["comments"])
@@ -14,10 +15,13 @@ async def main():
     return {"message": "Comments Asosiy sahifasiga xush kelibsiz!!"}
 
 
-@router_comment.get("/comments")
+@router_comment.get("/comments", response_model=Page[dict])
 async def get_comments():
     comments = session.query(CommentModel).all()
-    return comments
+    return paginate(comments)
+
+
+add_pagination(router_comment)
 
 
 @router_comment.post("/comment/{post_id}")
