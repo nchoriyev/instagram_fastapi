@@ -8,7 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi_jwt_auth import AuthJWT
 # from core import get_current_user
 
-
+#Assalomu Aleykum
 session = Session(bind=ENGINE)
 
 auth_router = APIRouter(prefix='/auth', tags=['auth'])
